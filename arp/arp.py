@@ -55,24 +55,25 @@ class ARProcess:
 
         Equivalent to autocovariance function since var(X_t) = 1
         """
-        acf = self.acv.copy()
+        acf = list(self.acv.copy())
         for j in range(len(acf), k):
             new_val = 0
             for i in range(len(self.phi)):
-                new_val += -self.phi[i] * acf[abs(i - j + 1)]
+                new_val += self.phi[i] * acf[abs(i - j + 1)]
             acf.append(new_val)
-        return acf
+        return np.array(acf)
 
-    def reset(self, seed):
+    def reset(self, seed=None):
         self.history = np.zeros((self.p, self.m))
         if not seed is None:
             np.random.seed(seed)
 
     def step(self):
         rnd = np.random.normal(size=self.m)
+        h = np.sum(self.history[::-1] * self.phi, axis=0)
         x_t = np.sum(self.history[::-1] * self.phi, axis=0) + rnd * self.sigma_z
         self.history = np.vstack([self.history, x_t])[1:]
-        return x_t
+        return x_t, h
 
 if __name__ == "__main__":
     ar = ARProcess(3, 0.5, 2)
