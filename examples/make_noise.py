@@ -10,11 +10,11 @@ for i, p in enumerate([1, 2, 3, 5]):
         for s, seed in enumerate(seeds):
             noise = []
             arp.reset(seed)
-            # # warm up
-            # for _ in range(1000):
-            #     arp.step()
+            # warm up
+            for _ in range(1000):
+                arp.step()
             for _ in range(100):
-                noise.append(arp.step())
+                noise.append(arp.step()[0])
             if s == 0:
                 plt.plot(noise)
             else:
