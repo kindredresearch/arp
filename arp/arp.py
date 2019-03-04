@@ -3,7 +3,7 @@ from collections.abc import Iterable
 
 
 class ARProcess:
-    def __init__(self, p=0, alpha=0, m=1, seed=None):
+    def __init__(self, p=0, alpha=0, size=1, seed=None):
         """
         Args:
             p: an integer process order
@@ -18,7 +18,7 @@ class ARProcess:
             assert 0 <= val < 1, "alpha values must lie within [0, 1) interval"
         self.alpha = alpha
         self.p = p
-        self.m = m
+        self.size = size
         self.phi = self.compute_phi(self.alpha)
         self.acv, self.sigma_z = self.solve_yule_walker(self.phi)
         self.reset(seed)
@@ -64,12 +64,12 @@ class ARProcess:
         return np.array(acf)
 
     def reset(self, seed=None):
-        self.history = np.zeros((self.p, self.m))
+        self.history = np.zeros((self.p, self.size))
         if not seed is None:
             np.random.seed(seed)
 
     def step(self):
-        rnd = np.random.normal(size=self.m)
+        rnd = np.random.normal(size=self.size)
         h = np.sum(self.history[::-1] * self.phi, axis=0)
         x_t = np.sum(self.history[::-1] * self.phi, axis=0) + rnd * self.sigma_z
         self.history = np.vstack([self.history, x_t])[1:]
