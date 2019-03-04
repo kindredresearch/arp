@@ -77,7 +77,7 @@ def train(env_id, num_timesteps, seed):
     env.close()
 
 def main():
-    seed = 1
+    seed = 2
     home_dir = realpath(realpath(__file__) + "/../../..")
     random_state = pkl.load(open(join(home_dir, "rl_experiments/rl_experiments/random_states.pkl"), "rb"))[seed - 1].get_state()
     np.random.set_state(random_state)

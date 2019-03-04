@@ -23,6 +23,8 @@ class ARMlpPolicy(object):
         ob = U.get_placeholder(name="ob", dtype=tf.float32, shape=[sequence_length, p + 1] + list(ob_space.shape))
         acs = U.get_placeholder(name="ac", dtype=tf.float32, shape=[sequence_length, p] + list(ac_space.shape))
         init_mask = U.get_placeholder(name="init_mask", dtype=tf.float32, shape=[sequence_length, p, 1])
+        past_x = U.get_placeholder(name="past_x", dtype=tf.float32, shape=[sequence_length, p] + list(ac_space.shape))
+        update_mask = U.get_placeholder(name="update_mask", dtype=tf.float32, shape=[sequence_length, p, 1])
 
         if normalize:
             with tf.variable_scope("obfilter"):
@@ -55,12 +57,13 @@ class ARMlpPolicy(object):
         self.state_in = []
         self.state_out = []
         stochastic = tf.placeholder(dtype=tf.bool, shape=())
-        ac = U.switch(stochastic, self.pd.sample(acs, init_mask), self.pd.mode())
-        self._act = U.function([stochastic, ob, acs, init_mask], [ac, self.vpred, mean, logstd])
+        #ac = U.switch(stochastic, self.pd.sample(acs, init_mask), self.pd.mode())
+        ac, past_x_next = self.pd.sample(acs, init_mask, past_x, update_mask)
+        self._act = U.function([stochastic, ob, acs, init_mask, past_x, update_mask], [ac, self.vpred, mean, logstd, past_x_next])
 
-    def act(self, stochastic, ob, acs, init_mask):
-        ac1, vpred1, mean1, logstd =  self._act(stochastic, ob[None], acs[None], init_mask[None])
-        return ac1[0], vpred1[0], mean1[0], logstd[0]
+    def act(self, stochastic, ob, acs, init_mask, past_x, update_mask):
+        ac1, vpred1, mean1, logstd, past_x_next =  self._act(stochastic, ob[None], acs[None], init_mask[None], past_x, update_mask)
+        return ac1[0], vpred1[0], mean1[0], logstd[0], past_x_next[0]
     def get_variables(self):
         return tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, self.scope)
     def get_trainable_variables(self):
