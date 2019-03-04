@@ -29,7 +29,10 @@ class ARMlpPolicy(object):
                 self.ob_rms = RunningMeanStd(shape=ob_space.shape[-1])
 
         with tf.variable_scope('vf'):
-            obz = tf.clip_by_value((ob - self.ob_rms.mean) / self.ob_rms.std, -5.0, 5.0)
+            if normalize:
+                obz = tf.clip_by_value((ob - self.ob_rms.mean) / self.ob_rms.std, -5.0, 5.0)
+            else:
+                obz = ob
             last_out = obz[:, -1, :]
             for i in range(num_hid_layers):
                 last_out = tf.nn.tanh(U.dense(last_out, hid_size, name="fc%i"%(i+1), weight_init=U.normc_initializer(1.0)))
