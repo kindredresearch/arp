@@ -13,7 +13,6 @@ import random
 from rl_experiments.normalized_env import NormalizedEnv
 
 def train(env_id, num_timesteps, seed):
-    from baselines.ppo1 import mlp_policy, pposgd_simple
     from ar_ppo import ar_mlp_policy, ar_pposgd_simple
     U.make_session(num_cpu=1).__enter__()
     env = make_mujoco_env(env_id, seed)

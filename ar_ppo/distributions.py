@@ -37,8 +37,8 @@ class ARDiagGaussianPd(DiagGaussianPd):
         self.logstd = flat[..., -ac_dim:]
         #self.mean3, self.mean2, self.mean1, self.mean, self.logstd = tf.split(axis=len(flat.shape)-1, num_or_size_splits=5, value=flat)
         self.std = tf.exp(self.logstd)
-    def neglogp(self, acs, init_mask, past_x, update_mask):
-        past_x_next = (acs - self.mean)[:, :-1, :]/tf.expand_dims(self.std, axis=1) * init_mask
+    def neglogp(self, acs, past_x, update_mask):
+        past_x_next = (acs - self.mean)[:, :-1, :]/tf.expand_dims(self.std, axis=1)
         past_x_next = past_x_next * update_mask + past_x * (1 - update_mask)
         h = tf.reduce_sum(self.phi[::-1] * past_x_next, axis=-2)
         #h = h * update_mask + self.std * past_x * (1 - update_mask)
@@ -50,15 +50,17 @@ class ARDiagGaussianPd(DiagGaussianPd):
         raise NotImplementedError
     def entropy(self):
         return tf.reduce_sum(self.logstd + .5 * np.log(2.0 * np.pi * np.e), axis=-1)
-    def sample(self, acs, init_mask, past_x, update_mask):
-        past_x_next = (acs - self.mean[:, :-1, :])/self.std * init_mask
+    def sample(self, acs, past_x, update_mask):
+        past_x_next = (acs - self.mean[:, :-1, :])/self.std
         past_x_next = past_x_next * update_mask + past_x * (1 - update_mask)
         h = tf.reduce_sum(self.phi[::-1] * past_x_next, axis=1)
         next_ac = self.mean[:, -1, :] + self.std * h + self.std * self.sigma_z * tf.random_normal(tf.shape(self.mean[:, -1, :]))
         past_x_next = tf.concat([past_x_next[:, 1:, :], tf.expand_dims((next_ac - self.mean[:, -1, :])/self.std, axis=1)], axis=1)
         return next_ac, past_x_next
-    def logp(self, x, init_mask, past_x, update_mask):
-        return - self.neglogp(x, init_mask, past_x, update_mask)
+    def logp(self, x, past_x, update_mask):
+        return - self.neglogp(x, past_x, update_mask)
+    def mode(self):
+        return self.mean[:, :-1, :]
 
 class ARDiagGaussianPdType(DiagGaussianPdType):
     def __init__(self, size):
