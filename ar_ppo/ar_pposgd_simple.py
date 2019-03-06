@@ -32,6 +32,10 @@ def traj_segment_generator(pi, env, horizon, stochastic, ar):
     past_xs = np.array([past_x_next for _ in range(horizon)])
     prevacs = acs.copy()
     noise = []
+    ar.reset()
+    for i in range(30):
+        x, h = ar.step()
+        past_x_next = np.vstack([past_x_next, x])[1:]
 
     while True:
         prevac = np.array(stacked_ac)
@@ -95,6 +99,10 @@ def traj_segment_generator(pi, env, horizon, stochastic, ar):
             stacked_ac = [ac * 0.0] * (ar.p + 1)
             update_mask = np.zeros((ar.p, 1))
             past_x_next = np.zeros((ar.p, ac.shape[-1]))
+            ar.reset()
+            for i in range(30):
+                x, h = ar.step()
+                past_x_next = np.vstack([past_x_next, x])[1:]
         t += 1
 
 def add_vtarg_and_adv(seg, gamma, lam):
