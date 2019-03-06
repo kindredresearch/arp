@@ -17,8 +17,8 @@ def train(env_id, num_timesteps, seed):
     U.make_session(num_cpu=1).__enter__()
     env = make_mujoco_env(env_id, seed)
     env = NormalizedEnv(env)
-    p = 3
-    alpha = 0.8
+    p = 1
+    alpha = 0.9
     ar = ARProcess(p, alpha, size=env.action_space.shape[-1])
     def policy_fn(name, ob_space, ac_space):
         return ar_mlp_policy.ARMlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,

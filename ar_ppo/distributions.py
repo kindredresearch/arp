@@ -67,6 +67,8 @@ class ARDiagGaussianPdType(DiagGaussianPdType):
         self.size = size
     def pdclass(self):
         return ARDiagGaussianPd
+    def pdfromflat(self, flat, *args):
+        return self.pdclass()(flat, *args)
 
 def make_ar_pdtype(ac_space):
     from gym import spaces
