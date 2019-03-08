@@ -47,15 +47,19 @@ class ARDiagGaussianPd(DiagGaussianPd):
                + 0.5 * np.log(2.0 * np.pi) * tf.to_float(tf.shape(acs)[-1]) \
                + tf.reduce_sum(self.logstd + np.log(self.sigma_z), axis=-1)
     def kl(self, other):
-        raise NotImplementedError
+        assert isinstance(other, ARDiagGaussianPd)
+        return tf.reduce_sum(other.logstd - self.logstd + (tf.square(self.std) + tf.square(self.mean[:, -1, :] - other.mean[:, -1, :])) / (
+                    2.0 * tf.square(other.std)) - 0.5, axis=-1)
     def entropy(self):
-        return tf.reduce_sum(self.logstd + .5 * np.log(2.0 * np.pi * np.e), axis=-1)
+        return tf.reduce_sum(self.logstd + np.log(self.sigma_z) + .5 * np.log(2.0 * np.pi * np.e), axis=-1)
     def sample(self, acs, past_x, update_mask):
         past_x_next = (acs - self.mean[:, :-1, :])/self.std
         past_x_next = past_x_next * update_mask + past_x * (1 - update_mask)
         h = tf.reduce_sum(self.phi[::-1] * past_x_next, axis=1)
-        next_ac = self.mean[:, -1, :] + self.std * h + self.std * self.sigma_z * tf.random_normal(tf.shape(self.mean[:, -1, :]))
-        past_x_next = tf.concat([past_x_next[:, 1:, :], tf.expand_dims((next_ac - self.mean[:, -1, :])/self.std, axis=1)], axis=1)
+        eps = tf.random_normal(tf.shape(self.mean[:, -1, :]))
+        X = h + self.sigma_z * eps
+        next_ac = self.mean[:, -1, :] + self.std * X
+        past_x_next = tf.concat([past_x_next[:, 1:, :], tf.expand_dims(X, axis=1)], axis=1)
         return next_ac, past_x_next
     def logp(self, x, past_x, update_mask):
         return - self.neglogp(x, past_x, update_mask)

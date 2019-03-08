@@ -40,10 +40,10 @@ def traj_segment_generator(pi, env, horizon, stochastic, ar):
     update_masks = np.array([update_mask for _ in range(horizon)])
     past_xs = np.array([past_x_next for _ in range(horizon)])
     prevacs = acs.copy()
-    ar.reset()
-    for i in range(30):
-        x, h = ar.step()
-        past_x_next = np.vstack([past_x_next, x])[1:]
+    # ar.reset()
+    # for i in range(30):
+    #     x, h = ar.step()
+    #     past_x_next = np.vstack([past_x_next, x])[1:]
     while True:
         prevac = ac
         past_x = past_x_next
@@ -93,10 +93,10 @@ def traj_segment_generator(pi, env, horizon, stochastic, ar):
             stacked_ac = [ac * 0.0] * (ar.p + 1)
             update_mask = np.zeros((ar.p, 1))
             past_x_next = np.zeros((ar.p, ac.shape[-1]))
-            ar.reset()
-            for i in range(30):
-                x, h = ar.step()
-                past_x_next = np.vstack([past_x_next, x])[1:]
+            # ar.reset()
+            # for i in range(30):
+            #     x, h = ar.step()
+            #     past_x_next = np.vstack([past_x_next, x])[1:]
         t += 1
 
 def add_vtarg_and_adv(seg, gamma, lam):
@@ -143,7 +143,7 @@ def learn(env, policy_fn, *,
     update_mask = tf.placeholder(dtype=tf.float32, shape=[None, ar.p, 1])
     past_x = tf.placeholder(dtype=tf.float32, shape=[None, ar.p, ac_space.shape[-1]])
 
-    kloldnew = oldpi.pd.kl(pi.pd, ac, past_x, update_mask)
+    kloldnew = oldpi.pd.kl(pi.pd)
     ent = pi.pd.entropy()
     meankl = tf.reduce_mean(kloldnew)
     meanent = tf.reduce_mean(ent)
