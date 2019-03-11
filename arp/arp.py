@@ -18,7 +18,10 @@ class ARProcess:
             assert 0 <= val < 1, "alpha values must lie within [0, 1) interval"
         self.alpha = alpha
         self.p = p
-        self.size = size
+        if not isinstance(size, Iterable):
+            self.size = (size,)
+        else:
+            self.size = tuple(size)
         self.phi = self.compute_phi(self.alpha)
         self.acv, self.sigma_z = self.solve_yule_walker(self.phi)
         self.reset(seed)
@@ -64,7 +67,7 @@ class ARProcess:
         return np.array(acf)
 
     def reset(self, seed=None):
-        self.history = np.zeros((self.p, self.size))
+        self.history = np.zeros((self.p,) + tuple(self.size))
         if not seed is None:
             np.random.seed(seed)
 
