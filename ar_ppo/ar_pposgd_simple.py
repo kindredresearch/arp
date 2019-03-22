@@ -8,6 +8,7 @@ from baselines.common.mpi_moments import mpi_moments
 from mpi4py import MPI
 from collections import deque
 
+
 def traj_segment_generator(pi, env, horizon, stochastic, ar):
     t = 0
     ac = env.action_space.sample() # not used, just so we have the datatype
@@ -156,8 +157,7 @@ def learn(env, policy_fn, *,
     #meankl = 0
     meanent = tf.reduce_mean(ent)
     pol_entpen = (-entcoeff) * meanent
-
-    ratio = tf.exp(tf.clip_by_value(pi.pd.logp(ac, past_x, update_mask) - oldpi.pd.logp(ac, past_x, update_mask), -np.inf, 10)) # pnew / pold
+    ratio = tf.exp(tf.clip_by_value(pi.pd.logp(ac, past_x, update_mask) - oldpi.pd.logp(ac, past_x, update_mask), -np.inf, np.log(100))) # pnew / pold
     surr1 = ratio * atarg # surrogate from conservative policy iteration
     surr2 = tf.clip_by_value(ratio, 1.0 - clip_param, 1.0 + clip_param) * atarg #
     pol_surr = - tf.reduce_mean(tf.minimum(surr1, surr2)) # PPO's pessimistic surrogate (L^CLIP)
@@ -167,6 +167,7 @@ def learn(env, policy_fn, *,
     loss_names = ["pol_surr", "pol_entpen", "vf_loss", "ent"]
 
     var_list = pi.get_trainable_variables()
+    #eval_ratio = U.function([ob, ac, atarg, ret, lrmult, past_x, update_mask], [log_ratio])
     lossandgrad = U.function([ob, ac, atarg, ret, lrmult, past_x, update_mask], losses + [U.flatgrad(total_loss, var_list)])
     adam = MpiAdam(var_list, epsilon=adam_epsilon)
 
@@ -221,15 +222,31 @@ def learn(env, policy_fn, *,
         optim_batchsize = optim_batchsize or ob.shape[0]
 
         if hasattr(pi, "ob_rms"): pi.ob_rms.update(ob[:, -1, :]) # update running mean/std for policy
-
         assign_old_eq_new() # set old parameter values to new parameter values
         logger.log("Optimizing...")
         logger.log(fmt_row(13, loss_names))
         # Here we do a bunch of optimization epochs over the data
+        # import _pickle as pickle
+        # with open("bad_data_batch.pkl", "rb") as f:
+        #     bad_data = pickle.load(f)
+        # d.data_map = bad_data
+        # d.enable_shuffle = 0
+        # from rl_experiments.utils import tf_load_session_from_pickled_model
+        # with open("bad_tf_session.pkl", "rb") as f:
+        #     bad_session = pickle.load(f)
+        # tf_load_session_from_pickled_model(bad_session)
         for _ in range(optim_epochs):
             losses = [] # list of tuples, each of which gives the loss for a minibatch
             for batch in d.iterate_once(optim_batchsize):
+                # log_ratio_val = eval_ratio(batch["ob"], batch["ac"], batch["atarg"], batch["vtarg"], cur_lrmult, batch['past_x'], batch['update_mask'])[0]
+                # print("log ratio", np.min(log_ratio_val), np.max(log_ratio_val))
+                # if np.max(log_ratio_val) > 3:
+                #     ind = log_ratio_val > 3
+                #     print("ind", np.where(ind))
+                # else:
+                #     ind = np.arange(len(log_ratio_val))
                 *newlosses, g = lossandgrad(batch["ob"], batch["ac"], batch["atarg"], batch["vtarg"], cur_lrmult, batch['past_x'], batch['update_mask'])
+                #print("ratio", np.max(ratio), np.min(ratio))
                 adam.update(g, optim_stepsize * cur_lrmult)
                 losses.append(newlosses)
             logger.log(fmt_row(13, np.mean(losses, axis=0)))
