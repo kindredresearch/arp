@@ -61,7 +61,7 @@ class ARMlpPolicy(object):
         self._act = U.function([stochastic, ob, acs, past_x, update_mask], [ac, self.vpred, mean, logstd, past_x_next])
 
     def act(self, stochastic, ob, acs, past_x, update_mask):
-        ac1, vpred1, mean1, logstd, past_x_next =  self._act(stochastic, ob[None], acs[None], past_x, update_mask)
+        ac1, vpred1, mean1, logstd, past_x_next =  self._act(stochastic, ob[None], acs[None], past_x[None], update_mask[None])
         return ac1[0], vpred1[0], mean1[0], logstd[0], past_x_next[0]
     def get_variables(self):
         return tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, self.scope)
