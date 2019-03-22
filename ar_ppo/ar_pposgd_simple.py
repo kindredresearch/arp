@@ -158,7 +158,7 @@ def learn(env, policy_fn, *,
     meanent = tf.reduce_mean(ent)
     pol_entpen = (-entcoeff) * meanent
     #log_ratio = pi.pd.logp(ac, past_x, update_mask) - oldpi.pd.logp(ac, past_x, update_mask)
-    ratio = tf.exp(tf.clip_by_value(pi.pd.logp(ac, past_x, update_mask) - oldpi.pd.logp(ac, past_x, update_mask), -np.inf, 10)) # pnew / pold
+    ratio = tf.exp(tf.clip_by_value(pi.pd.logp(ac, past_x, update_mask) - oldpi.pd.logp(ac, past_x, update_mask), -np.inf, np.log(100))) # pnew / pold
     surr1 = ratio * atarg # surrogate from conservative policy iteration
     surr2 = tf.clip_by_value(ratio, 1.0 - clip_param, 1.0 + clip_param) * atarg #
     pol_surr = - tf.reduce_mean(tf.minimum(surr1, surr2)) # PPO's pessimistic surrogate (L^CLIP)
