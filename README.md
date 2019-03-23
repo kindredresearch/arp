@@ -19,8 +19,8 @@ NumPy only is required to build and plot stationary AR processes.
 
 3. To run ARP with OpenAI Baselines PPO on a Mujoco environment
 
-`python ./examples/run_square_ppo.py --env Reacher-v2 --p 3 --alpha 0.5 --num_timesteps=1e6`
+`python ./examples/run_mujoco_ppo.py --env Reacher-v2 --p 3 --alpha 0.5 --num_timesteps=1e6`
 
 4. To run ARP with OpenAI Baselines TRPO on a Mujoco environment
 
-`python ./examples/run_square_trpo.py --env Reacher-v2 --p 3 --alpha 0.5 --num_timesteps=1e6`
+`python ./examples/run_mujoco_trpo.py --env Reacher-v2 --p 3 --alpha 0.5 --num_timesteps=1e6`
