@@ -13,7 +13,7 @@ def train(dt, num_timesteps, seed, p, alpha):
     from ar_ppo import ar_pposgd_simple
     U.make_session(num_cpu=1).__enter__()
     np.random.seed(seed)
-    env = SquareEnvironment(visualize=False, dt=dt, n_steps=int(1000/dt))
+    env = SquareEnvironment(visualize=True, dt=dt, n_steps=int(1000/dt))
     env = NormalizedEnv(env)
     ar = ARProcess(p, alpha, size=env.action_space.shape[-1])
     def policy_fn(name, ob_space, ac_space):
