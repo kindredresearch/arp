@@ -6,10 +6,6 @@ from baselines import logger
 import time
 import matplotlib.pyplot as plt
 import numpy as np
-import _pickle as pkl
-from os.path import join, realpath
-import tensorflow as tf
-import random
 from rl_experiments.normalized_env import NormalizedEnv
 from examples.run_mujoco_ppo import mujoco_arg_parser
 
@@ -23,7 +19,6 @@ def train(env_id, num_timesteps, seed, p, alpha):
     def policy_fn(name, ob_space, ac_space):
         return ar_mlp_policy.ARMlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
            hid_size=64, num_hid_layers=2, phi=ar.phi, sigma_z=ar.sigma_z)
-
 
     plt.ion()
     time.sleep(5.0)
