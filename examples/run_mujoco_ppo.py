@@ -1,30 +1,26 @@
 #!/usr/bin/env python3
 from arp.arp import ARProcess
-from baselines.common.cmd_util import make_mujoco_env, mujoco_arg_parser
+from baselines.common.cmd_util import make_mujoco_env
+from common.utils import mujoco_arg_parser
 from baselines.common import tf_util as U
-from baselines import logger
 import time
 import matplotlib.pyplot as plt
 import numpy as np
-import _pickle as pkl
-from os.path import join, realpath
-import tensorflow as tf
-import random
 from rl_experiments.normalized_env import NormalizedEnv
 
-def train(env_id, num_timesteps, seed):
-    from ar_ppo import ar_mlp_policy, ar_pposgd_simple
+
+def train(env_id, num_timesteps, seed, p, alpha):
+    from common import ar_mlp_policy
+    from ar_ppo import ar_pposgd_simple
     U.make_session(num_cpu=1).__enter__()
     env = make_mujoco_env(env_id, seed)
     env = NormalizedEnv(env)
-    p = 1
-    alpha = 0.9
     ar = ARProcess(p, alpha, size=env.action_space.shape[-1])
     def policy_fn(name, ob_space, ac_space):
         return ar_mlp_policy.ARMlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
            hid_size=64, num_hid_layers=2, phi=ar.phi, sigma_z=ar.sigma_z)
 
-
+    # Plot the learning curve
     plt.ion()
     time.sleep(5.0)
     fig = plt.figure(figsize=(10, 6))
@@ -60,7 +56,6 @@ def train(env_id, num_timesteps, seed):
                     ax1.set_xlim([x_tick, len(rets) * x_tick])
                     hl1.set_ydata(rets)
                     ax1.set_ylim([np.min(rets), np.max(rets) + 50])
-
             time.sleep(0.01)
             fig.canvas.draw()
             fig.canvas.flush_events()
@@ -76,17 +71,8 @@ def train(env_id, num_timesteps, seed):
     env.close()
 
 def main():
-    seed = 4
-    home_dir = realpath(realpath(__file__) + "/../../..")
-    random_state = pkl.load(open(join(home_dir, "rl_experiments/rl_experiments/random_states.pkl"), "rb"))[seed - 1].get_state()
-    np.random.set_state(random_state)
-    seed = np.random.randint(1, 2**31 - 1)
-    tf.set_random_seed(seed)
-    random.seed(seed)
-    rand_num = np.random.random()
     args = mujoco_arg_parser().parse_args()
-    logger.configure()
-    train(args.env, num_timesteps=args.num_timesteps, seed=args.seed)
+    train(args.env, num_timesteps=args.num_timesteps, seed=args.seed, p=args.p, alpha=args.alpha)
 
 if __name__ == '__main__':
     main()

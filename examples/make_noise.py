@@ -1,6 +1,7 @@
 from arp.arp import ARProcess
 import matplotlib.pyplot as plt
 
+# Plot AR-p realizations at different values of p and alpha
 plt.figure(figsize=(20, 12))
 for i, p in enumerate([1, 2, 3, 5]):
     for j, alpha in enumerate([0.0, 0.5, 0.8, 0.9]):
@@ -21,4 +22,4 @@ for i, p in enumerate([1, 2, 3, 5]):
                 plt.plot(noise, alpha=0.5)
         plt.title("p = {}, alpha = {}".format(p, alpha))
 plt.tight_layout()
-plt.show(True)
+plt.show()

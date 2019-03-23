@@ -8,10 +8,12 @@ class ARProcess:
         Args:
             p: an integer process order
             alpha: a scalar or a vector of smoothing parameters alpha_k
-            m: dimensionality of noise vector, e.g. dimensionality of action space
+            size: an integer or a tuple representing dimensionality of
+                process observations
+            seed: an integer random seed to use
         """
         if isinstance(alpha, Iterable):
-            assert len(alpha) == p, "Length of alpha vector must be equal to the process order"
+            assert len(alpha) == p, "Length of an alpha vector must be equal to the process order"
         else:
             alpha = [alpha] * p
         for val in alpha:
@@ -27,6 +29,7 @@ class ARProcess:
         self.reset(seed)
 
     def compute_phi(self, alpha):
+        """Computes AR process coefficients \phi_k"""
         def polynomial_coeffs(alpha):
             if len(alpha) == 1:
                 return [-alpha[0]]
@@ -41,6 +44,8 @@ class ARProcess:
         return -np.expand_dims(np.array(phi), axis=1)
 
     def solve_yule_walker(self, phi):
+        """Computes AR process noise component variance \sigma_Z by
+         solving YW equations."""
         p = len(phi)
         A = np.zeros((p, p))
         for r in range(p):
@@ -54,9 +59,9 @@ class ARProcess:
         return acv, sigma_z
 
     def acf(self, k):
-        """Computes k values of autocorrelation function ro(tau), tau = 1, .., k.
+        """Computes k values of an autocorrelation function \ro(\tau), \tau = 1, .., k.
 
-        Equivalent to autocovariance function since var(X_t) = 1
+        Equivalent to autocovariance function since var(X_t) = 1.
         """
         acf = list(self.acv.copy())
         for j in range(len(acf), k):
@@ -67,11 +72,13 @@ class ARProcess:
         return np.array(acf)
 
     def reset(self, seed=None):
+        """Resets the process by setting history to zero vectors."""
         self.history = np.zeros((self.p,) + tuple(self.size))
         if not seed is None:
             np.random.seed(seed)
 
     def step(self):
+        """Generates a next observation of the process."""
         rnd = np.random.normal(size=self.size)
         h = np.sum(self.history[::-1] * self.phi, axis=0)
         x_t = np.sum(self.history[::-1] * self.phi, axis=0) + rnd * self.sigma_z
@@ -79,6 +86,6 @@ class ARProcess:
         return x_t, h
 
 if __name__ == "__main__":
-    ar = ARProcess(3, 0.5, 2)
+    ar = ARProcess(3, 0.8, 2)
     for i in range(100):
-        print(ar.step())
+        print(ar.step()[0])

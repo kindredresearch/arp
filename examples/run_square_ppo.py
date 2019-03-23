@@ -1,30 +1,25 @@
 #!/usr/bin/env python3
 from arp.arp import ARProcess
-from baselines.common.cmd_util import make_mujoco_env, mujoco_arg_parser
 from baselines.common import tf_util as U
-from baselines import logger
+from common.utils import square_arg_parser
 import time
 import matplotlib.pyplot as plt
 import numpy as np
-import _pickle as pkl
-from os.path import join, realpath
-import tensorflow as tf
-import random
 from rl_experiments.normalized_env import NormalizedEnv
-from examples.run_mujoco_ppo import mujoco_arg_parser
+from examples.square import SquareEnvironment
 
-def train(env_id, num_timesteps, seed, p, alpha):
+def train(dt, num_timesteps, seed, p, alpha):
     from common import ar_mlp_policy
-    from ar_trpo import ar_trpo_mpi
+    from ar_ppo import ar_pposgd_simple
     U.make_session(num_cpu=1).__enter__()
-    env = make_mujoco_env(env_id, seed)
+    np.random.seed(seed)
+    env = SquareEnvironment(visualize=False, dt=dt, n_steps=int(1000/dt))
     env = NormalizedEnv(env)
     ar = ARProcess(p, alpha, size=env.action_space.shape[-1])
     def policy_fn(name, ob_space, ac_space):
         return ar_mlp_policy.ARMlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
            hid_size=64, num_hid_layers=2, phi=ar.phi, sigma_z=ar.sigma_z)
-
-
+    # Plot learning curve
     plt.ion()
     time.sleep(5.0)
     fig = plt.figure(figsize=(10, 6))
@@ -49,7 +44,6 @@ def train(env_id, num_timesteps, seed, p, alpha):
             if cum_episode_lengths[-1] >= x_tick:
                 steps_show = np.arange(x_tick, cum_episode_lengths[-1] + 1, x_tick)
                 rets = []
-
                 for i in range(len(steps_show)):
                     rets_in_window = returns[(cum_episode_lengths > max(0, x_tick * (i + 1) - window_size_steps)) *
                                              (cum_episode_lengths < x_tick * (i + 1))]
@@ -60,24 +54,23 @@ def train(env_id, num_timesteps, seed, p, alpha):
                     ax1.set_xlim([x_tick, len(rets) * x_tick])
                     hl1.set_ydata(rets)
                     ax1.set_ylim([np.min(rets), np.max(rets) + 50])
-
             time.sleep(0.01)
             fig.canvas.draw()
             fig.canvas.flush_events()
 
-    ar_trpo_mpi.learn(env, policy_fn,
-                      callback=mujoco_callback,
-                      timesteps_per_batch=2048, max_kl=0.01,
-                      cg_iters=10, cg_damping=0.1,
-                      max_timesteps=num_timesteps, gamma=0.99, lam=0.98,
-                      vf_iters=5, vf_stepsize=1e-3, ar=ar)
-
+    ar_pposgd_simple.learn(env, policy_fn,
+                           callback=mujoco_callback,
+                           max_timesteps=num_timesteps,
+                           timesteps_per_actorbatch=8192,
+                           clip_param=0.2, entcoeff=0.0,
+                           optim_epochs=10, optim_stepsize=3e-4, optim_batchsize=256,
+                           gamma=0.995, lam=0.995, schedule='linear', ar=ar
+                           )
     env.close()
 
 def main():
-    args = mujoco_arg_parser().parse_args()
-    logger.configure()
-    train(args.env, num_timesteps=args.num_timesteps, seed=args.seed, p=args.p, alpha = args.alpha)
+    args = square_arg_parser().parse_args()
+    train(num_timesteps=args.num_timesteps, seed=args.seed, dt=args.dt, p=args.p, alpha=args.alpha)
 
 if __name__ == '__main__':
     main()

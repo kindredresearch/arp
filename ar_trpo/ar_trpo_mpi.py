@@ -5,7 +5,6 @@ import tensorflow as tf, numpy as np
 import time
 from baselines.common import colorize
 from collections import deque
-from baselines.common import set_global_seeds
 from baselines.common.mpi_adam import MpiAdam
 from baselines.common.cg import cg
 from contextlib import contextmanager
@@ -22,8 +21,9 @@ def traj_segment_generator(pi, env, horizon, stochastic, ar):
     new = True
     rew = 0.0
     ob = env.reset()
-    stacked_ob = [ob * 0.0] * ar.p + [ob]
+    stacked_ob = [ob] * (ar.p + 1)
     stacked_ac = [ac * 0.0] * (ar.p + 1)
+    # mask to discard AR terms at the beginning of a roll-out and after a learning update
     update_mask = np.zeros((ar.p, 1))
     past_x_next = np.zeros((ar.p, ac.shape[-1]))
     cur_ep_ret = 0
@@ -40,14 +40,12 @@ def traj_segment_generator(pi, env, horizon, stochastic, ar):
     update_masks = np.array([update_mask for _ in range(horizon)])
     past_xs = np.array([past_x_next for _ in range(horizon)])
     prevacs = acs.copy()
-    # ar.reset()
-    # for i in range(30):
-    #     x, h = ar.step()
-    #     past_x_next = np.vstack([past_x_next, x])[1:]
     while True:
         prevac = ac
         past_x = past_x_next
-        ac, vpred, ac_mean, logstd, past_x_next = pi.act(stochastic, np.array(stacked_ob), np.array(stacked_ac[1:]), past_x, update_mask)
+        ac, vpred, ac_mean, logstd, past_x_next = pi.act(np.array(stacked_ob), np.array(stacked_ac[1:]), past_x, update_mask)
+        if not stochastic:
+            ac = ac_mean[-ac.shape[-1]:]
         if t%200 >= 0 and t%200 < 5:
             print(ac_mean[-ac.shape[-1]:], ac - ac_mean[-ac.shape[-1]:], ac, np.exp(logstd), vpred)
         # Slight weirdness here because we need value function at time T
@@ -58,7 +56,6 @@ def traj_segment_generator(pi, env, horizon, stochastic, ar):
                     "ac" : acs, "prevac" : prevacs, "nextvpred": vpred * (1 - new),
                     "ep_rets" : ep_rets, "ep_lens" : ep_lens,
                    "past_x": past_xs, "update_mask": update_masks}
-            #_, vpred, _, _, _ = pi.step(ob, stochastic=stochastic)
             # Be careful!!! if you change the downstream algorithm to aggregate
             # several of these batches, then be sure to do a deepcopy
             ep_rets = []
@@ -82,21 +79,17 @@ def traj_segment_generator(pi, env, horizon, stochastic, ar):
         cur_ep_len += 1
         update_mask = np.vstack([update_mask, 1])[1:]
         if t > 0 and t % horizon == 0:
-            update_mask = np.zeros((ar.p, 1))
+            update_mask = np.zeros((ar.p, 1))   # use old AR terms right after a learning update
         if new:
             ep_rets.append(cur_ep_ret)
             ep_lens.append(cur_ep_len)
             cur_ep_ret = 0
             cur_ep_len = 0
             ob = env.reset()
-            stacked_ob = [ob * 0.0] * ar.p + [ob]
+            stacked_ob = [ob] * (ar.p + 1)
             stacked_ac = [ac * 0.0] * (ar.p + 1)
             update_mask = np.zeros((ar.p, 1))
             past_x_next = np.zeros((ar.p, ac.shape[-1]))
-            # ar.reset()
-            # for i in range(30):
-            #     x, h = ar.step()
-            #     past_x_next = np.vstack([past_x_next, x])[1:]
         t += 1
 
 def add_vtarg_and_adv(seg, gamma, lam):
@@ -143,15 +136,15 @@ def learn(env, policy_fn, *,
     update_mask = tf.placeholder(dtype=tf.float32, shape=[None, ar.p, 1])
     past_x = tf.placeholder(dtype=tf.float32, shape=[None, ar.p, ac_space.shape[-1]])
 
-    kloldnew = oldpi.pd.kl(pi.pd)
+    kloldnew = oldpi.pd.kl(pi.pd, ac, past_x, update_mask)
     ent = pi.pd.entropy()
     meankl = tf.reduce_mean(kloldnew)
     meanent = tf.reduce_mean(ent)
     entbonus = entcoeff * meanent
 
     vferr = tf.reduce_mean(tf.square(pi.vpred - ret))
-
-    ratio = tf.exp(pi.pd.logp(ac, past_x, update_mask) - oldpi.pd.logp(ac, past_x, update_mask)) # advantage * pnew / pold
+    # clip extreme values of importance sampling ratios
+    ratio = tf.exp(tf.clip_by_value(pi.pd.logp(ac, past_x, update_mask) - oldpi.pd.logp(ac, past_x, update_mask), -np.inf, 5))
     surrgain = tf.reduce_mean(ratio * atarg)
 
     optimgain = surrgain + entbonus
@@ -237,7 +230,6 @@ def learn(env, policy_fn, *,
             seg = seg_gen.__next__()
         add_vtarg_and_adv(seg, gamma, lam)
 
-        # ob, ac, atarg, ret, td1ret = map(np.concatenate, (obs, acs, atargs, rets, td1rets))
         ob, ac, atarg, tdlamret, past_x, update_mask = seg["ob"], seg["ac"], seg["adv"], seg["tdlamret"], seg["past_x"], seg["update_mask"]
         vpredbefore = seg["vpred"] # predicted value function before udpate
         atarg = (atarg - atarg.mean()) / atarg.std() # standardized advantage function estimate
