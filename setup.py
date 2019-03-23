@@ -11,6 +11,7 @@ setup(name='arp',
                 if package.startswith('arp')],
       install_requires=[
           'numpy'
+          'matplotlib'
       ],
       description='Autoregressive Policies',
       author='Kindred AI',
