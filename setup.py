@@ -9,8 +9,10 @@ if sys.version_info.major != 3:
 setup(name='arp',
       packages=[package for package in find_packages()
                 if package.startswith('arp')],
-      install_requires=[],
+      install_requires=[
+          'numpy'
+      ],
       description='Autoregressive Policies',
       author='Kindred AI',
-      url='',
+      url='https://github.com/dkorenkevych/arp',
       version='1.0')
