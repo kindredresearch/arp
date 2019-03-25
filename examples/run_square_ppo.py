@@ -6,13 +6,20 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 from rl_experiments.normalized_env import NormalizedEnv
-from examples.square import SquareEnvironment
+from envs.square import SquareEnvironment
 
 def train(dt, num_timesteps, seed, p, alpha):
     from common import ar_mlp_policy
     from ar_ppo import ar_pposgd_simple
     U.make_session(num_cpu=1).__enter__()
     np.random.seed(seed)
+    plt.ion()
+    fig = plt.figure(figsize=(10, 6))
+    ax1 = fig.add_subplot(111)
+    hl1, = ax1.plot([], [], markersize=10, color='r')
+    ax1.set_xlabel("# time steps")
+    ax1.set_ylabel("Average return")
+    ax1.set_title("Learning progress")
     env = SquareEnvironment(visualize=True, dt=dt, n_steps=int(1000/dt))
     env = NormalizedEnv(env)
     ar = ARProcess(p, alpha, size=env.action_space.shape[-1])
@@ -20,11 +27,7 @@ def train(dt, num_timesteps, seed, p, alpha):
         return ar_mlp_policy.ARMlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
            hid_size=64, num_hid_layers=2, phi=ar.phi, sigma_z=ar.sigma_z)
     # Plot learning curve
-    plt.ion()
-    time.sleep(5.0)
-    fig = plt.figure(figsize=(10, 6))
-    ax1 = fig.add_subplot(111)
-    hl1, = ax1.plot([], [], markersize=10, color='r')
+    #time.sleep(5.0)
     def mujoco_callback(locals, globals):
         if not 'seg' in locals:
             return

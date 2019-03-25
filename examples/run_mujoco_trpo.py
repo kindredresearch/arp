@@ -7,7 +7,7 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 from rl_experiments.normalized_env import NormalizedEnv
-from examples.run_mujoco_ppo import mujoco_arg_parser
+from common.utils import mujoco_arg_parser
 
 def train(env_id, num_timesteps, seed, p, alpha):
     from common import ar_mlp_policy
@@ -21,10 +21,12 @@ def train(env_id, num_timesteps, seed, p, alpha):
            hid_size=64, num_hid_layers=2, phi=ar.phi, sigma_z=ar.sigma_z)
 
     plt.ion()
-    time.sleep(5.0)
     fig = plt.figure(figsize=(10, 6))
     ax1 = fig.add_subplot(111)
     hl1, = ax1.plot([], [], markersize=10, color='r')
+    ax1.set_xlabel("# time steps")
+    ax1.set_ylabel("Average return")
+    ax1.set_title("Learning progress")
     def mujoco_callback(locals, globals):
         if not 'seg' in locals:
             return

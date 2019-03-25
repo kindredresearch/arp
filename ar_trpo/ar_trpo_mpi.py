@@ -46,8 +46,8 @@ def traj_segment_generator(pi, env, horizon, stochastic, ar):
         ac, vpred, ac_mean, logstd, past_x_next = pi.act(np.array(stacked_ob), np.array(stacked_ac[1:]), past_x, update_mask)
         if not stochastic:
             ac = ac_mean[-ac.shape[-1]:]
-        if t%200 >= 0 and t%200 < 5:
-            print(ac_mean[-ac.shape[-1]:], ac - ac_mean[-ac.shape[-1]:], ac, np.exp(logstd), vpred)
+        # if t%200 >= 0 and t%200 < 5:
+        #     print("action", ac_mean[-ac.shape[-1]:], ac - ac_mean[-ac.shape[-1]:], ac, np.exp(logstd), vpred)
         # Slight weirdness here because we need value function at time T
         # before returning segment [0, T-1] so we get the correct
         # terminal value
