@@ -9,7 +9,7 @@ NumPy only is required to build and plot stationary AR processes.
 
 # Examples
 
-1. To generate and plot realizations of AR processes at different orders and smoothing parameter values
+1. To generate and plot noise trajectories based on AR processes at different orders and smoothing parameter values
 
 `python ./examples/make_noise.py`
 
