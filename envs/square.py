@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import gym
 from arp.arp import ARProcess
+import time
 
 class SquareEnvironment(gym.core.Env):
     def __init__(self,
@@ -33,11 +34,15 @@ class SquareEnvironment(gym.core.Env):
         self._action_space = Box(low=-np.ones(2), high=np.ones(2))
         self.fig = None
         if self.visualize:
-            self.fig = plt.figure()
+            plt.ion()
+            self.fig = plt.figure(figsize=(6,6))
             self.ax = self.fig.add_subplot(111)
             self.hl_target, = self.ax.plot([], [], markersize=25, marker="o", color='r')
+            self.hl_agent, = self.ax.plot([], [], markersize=10, marker="o", color='b')
             self.hl, = self.ax.plot([], [])
-            self.ax.set_title("Exploration Trajectory")
+            self.ax.set_xticks([])
+            self.ax.set_yticks([])
+            self.ax.set_title("Agent Trajectory")
 
     def step(self, action):
         self.current_steps += 1
@@ -54,30 +59,17 @@ class SquareEnvironment(gym.core.Env):
             self.trajectory.append(self.pos)
             self.hl_target.set_xdata(self.target_pos[0])
             self.hl_target.set_ydata(self.target_pos[1])
+            self.hl_agent.set_xdata(self.pos[0])
+            self.hl_agent.set_ydata(self.pos[1])
             self.hl.set_xdata(np.array(self.trajectory)[:, 0])
             self.hl.set_ydata(np.array(self.trajectory)[:, 1])
             self.ax.set_ylim([-self.size/2, self.size/2])
             self.ax.set_xlim([-self.size/2, self.size/2])
+            time.sleep(0.02)
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
         new_ob = np.hstack([self.pos * 2/self.size, self.velocity, (self.target_pos - self.pos) * 2/self.size])
         return new_ob, reward, done, {}
-
-    def render(self):
-        if self.fig is None:
-            self.fig = plt.figure()
-            self.ax = self.fig.add_subplot(111)
-            self.hl_target, = self.ax.plot(self.target_pos[0], self.target_pos[1], markersize=10, marker="o", color='r')
-            self.hl, = self.ax.plot([], [])
-
-        self.hl_target.set_xdata(self.target_pos[0])
-        self.hl_target.set_ydata(self.target_pos[1])
-        self.hl.set_xdata(np.array(self.trajectory)[:, 0])
-        self.hl.set_ydata(np.array(self.trajectory)[:, 1])
-        self.ax.set_ylim([-self.size / 2, self.size / 2])
-        self.ax.set_xlim([-self.size / 2, self.size / 2])
-        self.fig.canvas.draw()
-        self.fig.canvas.flush_events()
 
     def reset(self):
         self.velocity = np.zeros(2)
