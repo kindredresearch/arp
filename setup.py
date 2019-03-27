@@ -10,7 +10,7 @@ setup(name='arp',
       packages=[package for package in find_packages()
                 if package.startswith('arp')],
       install_requires=[
-          'numpy'
+          'numpy',
           'matplotlib'
       ],
       description='Autoregressive Policies',
