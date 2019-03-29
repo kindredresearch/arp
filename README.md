@@ -24,3 +24,9 @@ NumPy only is required to build and plot stationary AR processes.
 4. To run ARP with OpenAI Baselines TRPO on a Mujoco environment
 
 `python ./examples/run_mujoco_trpo.py --env Reacher-v2 --p 3 --alpha 0.5 --num-timesteps=1000000`
+
+# Reference
+
+*Autoregressive Policies for Continuous Control Deep Reinforcement Learning.*<br/>
+Dmytro Korenkevych, A. Rupam Mahmood, Gautham Vasan, James Bergstra. arXiv preprint, 2019.<br/>
+[paper](https://arxiv.org/abs/1903.11524) | [video](https://youtu.be/NCpyXBNqNmw)
