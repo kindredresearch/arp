@@ -1,6 +1,6 @@
 # Autoregressive policies for continuous control reinforcement learning
 
-This repository provides the implementation of autoregressive policies (ARPs) for continuous control deep reinforcement learning together with learning examples based on Open AI Baselines PPO and TRPO algorithms. The examples are provided for OpenAI Gym Mujoco environments and for Square sparse reward environment, discussed in the paper.   
+This repository provides the implementation of autoregressive policies (ARPs) for continuous control deep reinforcement learning together with learning examples based on Open AI Baselines PPO and TRPO algorithms. The examples are provided for OpenAI Gym Mujoco environments and for Square sparse reward environment, discussed in the [paper](https://arxiv.org/abs/1903.11524).   
 
 
 
