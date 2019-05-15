@@ -9,7 +9,7 @@ import gym
 from common.distributions import make_ar_pdtype
 import numpy as np
 
-class ARCNNPolicy(object):
+class ARMlpPolicy(object):
     recurrent = False
     def __init__(self, name, *args, **kwargs):
         with tf.variable_scope(name):
